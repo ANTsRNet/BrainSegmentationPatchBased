@@ -12,13 +12,17 @@ if( length( args ) != 3 )
   } else {
   inputFileName <- args[1]
   inputMaskFileName <- args[2]
-  outputFilePrefix <- args [3]
+  outputFilePrefix <- args[3]
   }
+
+inputFileName <- "Data/Example/1097782_defaced_MPRAGE.nii.gz"
+inputMaskFileName <- "Data/Example/1097782_defaced_MPRAGEBrainExtractionMask.nii.gz"
+outputFilePrefix <- "output"
 
 patchSize <- c( 40, 40, 40 )
 strideLength <- patchSize / 2
 
-classes <- c( "Background", "Csf", "GrayMatter", "WhiteMatter" )
+classes <- c( "Csf", "GrayMatter", "WhiteMatter", "Background" )
 numberOfClassificationLabels <- length( classes )
 
 imageMods <- c( "T1" )
@@ -75,87 +79,17 @@ endTime <- Sys.time()
 elapsedTime <- endTime - startTime
 cat( " (elapsed time:", elapsedTime, "seconds)\n" )
 
-cat( "Reconstruct from patches" )
+cat( "Reconstruct from patches and write to disk." )
 startTime <- Sys.time()
 
-cleanedImage <- reconstructImageFromPatches( drop( predictedDataArray ),
-  mask, strideLength = strideLength, domainImageIsMask = FALSE )
-
-antsImageWrite( cleanedImage, outputFileName )
-
-endTime <- Sys.time()
-elapsedTime <- endTime - startTime
-cat( "  (elapsed time:", elapsedTime, "seconds)\n" )
-
-endTimeTotal <- Sys.time()
-elapsedTimeTotal <- endTimeTotal - startTimeTotal
-cat( "\nTotal elapsed time:", elapsedTimeTotal, "seconds\n\n" )
-
-
-
-
-
-
-
-cat( "Normalizing to template and cropping to mask." )
-startTime <- Sys.time()
-centerOfMassTemplate <- getCenterOfMass( reorientTemplate )
-centerOfMassImage <- getCenterOfMass( image )
-xfrm <- createAntsrTransform( type = "Euler3DTransform",
-  center = centerOfMassTemplate,
-  translation = centerOfMassImage - centerOfMassTemplate )
-warpedImage <- applyAntsrTransformToImage( xfrm, image, reorientTemplate )
-warpedMask <- applyAntsrTransformToImage( xfrm, mask, reorientTemplate,
-  interpolation = "nearestNeighbor" )
-warpedMask <- iMath( warpedMask, "MD", 3 )
-warpedCroppedImage <- cropImage( warpedImage, warpedMask, 1 )
-originalCroppedSize <- dim( warpedCroppedImage )
-warpedCroppedImage <- resampleImage( warpedCroppedImage,
-  resampledImageSize, useVoxels = TRUE )
-endTime <- Sys.time()
-elapsedTime <- endTime - startTime
-cat( "  (elapsed time:", elapsedTime, "seconds)\n" )
-
-batchX <- array( data = as.array( warpedCroppedImage ),
-  dim = c( 1, resampledImageSize, channelSize ) )
-batchX <- ( batchX - mean( batchX ) ) / sd( batchX )
-
-cat( "Prediction and decoding" )
-startTime <- Sys.time()
-predictedData <- unetModel %>% predict( batchX, verbose = 0 )
-probabilityImagesArray <- decodeUnet( predictedData, warpedCroppedImage )
-endTime <- Sys.time()
-elapsedTime <- endTime - startTime
-cat( " (elapsed time:", elapsedTime, "seconds)\n" )
-
-cat( "Renormalize to native space" )
-startTime <- Sys.time()
-
-zeroArray <- array( data = 0, dim = dim( warpedImage ) )
-zeroImage <- as.antsImage( zeroArray, reference = warpedImage )
-
-probabilityImages <- list()
-for( i in seq_len( numberOfClassificationLabels ) )
-  {
-  probabilityImageTmp <- resampleImage( probabilityImagesArray[[1]][[i]],
-    originalCroppedSize, useVoxels = TRUE )
-  probabilityImageTmp <- decropImage( probabilityImageTmp, zeroImage )
-  probabilityImages[[i]] <- applyAntsrTransformToImage( invertAntsrTransform( xfrm ),
-    probabilityImageTmp, image )
-  }
-
-endTime <- Sys.time()
-elapsedTime <- endTime - startTime
-cat( "  (elapsed time:", elapsedTime, "seconds)\n" )
-
-cat( "Writing", outputFilePrefix )
-startTime <- Sys.time()
 
 probabilityImageFiles <- c()
 for( i in seq_len( numberOfClassificationLabels - 1 ) )
   {
-  probabilityImageFiles[i] <- paste0( outputFilePrefix, classes[i+1], ".nii.gz" )
-  antsImageWrite( probabilityImages[[i+1]], probabilityImageFiles[i] )
+  probabilityImage <- reconstructImageFromPatches( predictedDataArray[,,,,i],
+    mask, strideLength = strideLength, domainImageIsMask = FALSE )
+  probabilityImageFiles[i] <- paste0( outputFilePrefix, classes[i], ".nii.gz" )
+  antsImageWrite( probabilityImage, probabilityImageFiles[i] )
   }
 
 probabilityImagesMatrix <- imagesToMatrix( probabilityImageFiles, mask )
