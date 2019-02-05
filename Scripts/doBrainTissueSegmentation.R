@@ -51,6 +51,7 @@ startTime <- Sys.time()
 image <- antsImageRead( inputFileName, dimension = 3 ) %>% iMath( "Normalize" )
 mask <- antsImageRead( inputMaskFileName, dimension = 3 )
 mask[mask != 0] <- 1
+image <- image * mask
 endTime <- Sys.time()
 elapsedTime <- endTime - startTime
 cat( "  (elapsed time:", elapsedTime, "seconds)\n" )
