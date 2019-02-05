@@ -15,10 +15,6 @@ if( length( args ) != 3 )
   outputFilePrefix <- args[3]
   }
 
-inputFileName <- "Data/Example/1097782_defaced_MPRAGE.nii.gz"
-inputMaskFileName <- "Data/Example/1097782_defaced_MPRAGEBrainExtractionMask.nii.gz"
-outputFilePrefix <- "output"
-
 patchSize <- c( 40, 40, 40 )
 strideLength <- patchSize / 2
 
