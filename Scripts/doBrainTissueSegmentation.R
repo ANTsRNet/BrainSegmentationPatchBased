@@ -15,10 +15,6 @@ if( length( args ) != 3 )
   outputFilePrefix <- args[3]
   }
 
-inputFileName <- "Data/Example/1097782_defaced_MPRAGE.nii.gz"
-inputMaskFileName <- "Data/Example/1097782_defaced_MPRAGEBrainExtractionMask.nii.gz"
-outputFilePrefix <- "output"
-
 patchSize <- c( 40, 40, 40 )
 strideLength <- patchSize / 2
 
@@ -41,7 +37,7 @@ if( ! file.exists( weightsFileName ) )
   {
   weightsFileName <- getPretrainedNetwork( "brainSegmentationPatchBased", weightsFileName )
   }
-load_model_weights_hdf5( unetModel, filepath = weightsFileName )
+unetModel$load_weights( weightsFileName )
 endTime <- Sys.time()
 elapsedTime <- endTime - startTime
 cat( "  (elapsed time:", elapsedTime, "seconds)\n" )
@@ -54,7 +50,7 @@ cat( "Reading ", inputFileName )
 startTime <- Sys.time()
 image <- antsImageRead( inputFileName, dimension = 3 ) %>% iMath( "Normalize" )
 mask <- antsImageRead( inputMaskFileName, dimension = 3 )
-mask[mask != 0] <- 1
+mask <- thresholdImage( mask, 0.4999, 1.0001, 1, 0 )
 endTime <- Sys.time()
 elapsedTime <- endTime - startTime
 cat( "  (elapsed time:", elapsedTime, "seconds)\n" )
@@ -82,12 +78,11 @@ cat( " (elapsed time:", elapsedTime, "seconds)\n" )
 cat( "Reconstruct from patches and write to disk." )
 startTime <- Sys.time()
 
-
 probabilityImageFiles <- c()
 for( i in seq_len( numberOfClassificationLabels - 1 ) )
   {
   probabilityImage <- reconstructImageFromPatches( predictedDataArray[,,,,i],
-    mask, strideLength = strideLength, domainImageIsMask = FALSE )
+    mask, strideLength = strideLength, domainImageIsMask = TRUE )
   probabilityImageFiles[i] <- paste0( outputFilePrefix, classes[i], ".nii.gz" )
   antsImageWrite( probabilityImage, probabilityImageFiles[i] )
   }
