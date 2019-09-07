@@ -63,6 +63,7 @@ start_time = time.time()
 image = ants.image_read(input_file_name)
 mask = ants.image_read( input_mask_file_name)
 mask = ants.threshold_image( mask, 0.4999, 1.0001, 1, 0)
+image = image * mask
 end_time = time.time()
 elapsed_time = end_time - start_time
 print("  (elapsed time: ", elapsed_time, " seconds)")
