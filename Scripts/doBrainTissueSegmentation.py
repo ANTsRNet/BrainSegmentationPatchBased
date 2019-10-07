@@ -47,7 +47,7 @@ start_time = time.time()
 weights_file_name = "./brainSegmentationPatchBasedWeights.h5"
 
 if not os.path.exists(weights_file_name):
-    weights_file_name = antspynet.get_pretrained_network("brainExtraction", weights_file_name)
+    weights_file_name = antspynet.get_pretrained_network("brainSegmentationPatchBased", weights_file_name)
 
 unet_model.load_weights(weights_file_name)
 end_time = time.time()
