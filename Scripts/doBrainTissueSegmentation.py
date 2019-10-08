@@ -92,11 +92,12 @@ print("Reconstruct from patches and write to disk.")
 start_time = time.time()
 
 probability_images_array = list()
-for i in range(number_of_classification_labels - 1):
+for i in range(number_of_classification_labels-1):
     probability_image = antspynet.reconstruct_image_from_patches(
       np.squeeze(predicted_data[:, :, :, :, i]),
       domain_image=mask, stride_length=stride_length,
       domain_image_is_mask=True)
+    probability_image=ants.iMath_normalize(probability_image)
     probability_images_array.append(probability_image)
 
 end_time = time.time()
@@ -112,8 +113,8 @@ for i in range(number_of_classification_labels - 1):
     elapsed_time = end_time - start_time
     print("  (elapsed time: ", elapsed_time, " seconds)")
 
-probability_images_matrix = ants.image_list_to_matrix(probability_images_array, mask)
-segmentation_vector = np.argmax(probability_images_matrix, axis=0)
+probability_images_matrix = ants.image_list_to_matrix(probability_images_array,mask)
+segmentation_vector = np.argmax(probability_images_matrix, axis=0) + 1 
 segmentation_image = ants.make_image(mask, segmentation_vector)
 ants.image_write(segmentation_image, output_file_name_prefix + "Segmentation.nii.gz")
 
