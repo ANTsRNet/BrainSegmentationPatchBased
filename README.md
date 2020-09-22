@@ -1,3 +1,9 @@
+
+# **** This application has moved to the ANTsPyNet/ANTsRNet repositories.  The following is deprecated. ****
+
+----------------------------------
+
+
 # App:  Brain Segmentation (patch-based)
 
 Deep learning app made for patch-based T1-weighted MRI brain segmentation using ANTsRNet/ANTsPyNet
